@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest  # 用 Windows Runner 才能打包成 EXE
+    runs-on: windows-latest  # Windows runner 才能打包出 EXE
 
     steps:
       - name: Checkout repository
@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: "3.10"
 
-      # 缓存 pip，加速依赖安装
+      # 缓存 pip，加快依赖安装
       - name: Cache pip
         uses: actions/cache@v4
         with:
@@ -29,12 +29,14 @@ jobs:
             ${{ runner.os }}-pip-
 
       - name: Install dependencies
+        shell: pwsh
         run: |
           pip install --upgrade pip
-          if exist requirements.txt (pip install -r requirements.txt)
+          if (Test-Path requirements.txt) { pip install -r requirements.txt }
           pip install nuitka
 
       - name: Build with Nuitka (Onefile EXE)
+        shell: cmd
         run: |
           python -m nuitka ^
             --standalone ^
