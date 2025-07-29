@@ -55,7 +55,7 @@ jobs:
             --show-progress ^
             --show-memory ^
             --assume-yes-for-downloads ^
-            --plugin-enable=qt6 ^
+            --plugin-enable=pyqt6 ^
             --lto=no ^
             --output-dir=build ^
             main.py
