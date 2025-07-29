@@ -2,13 +2,13 @@ name: Build with Nuitka
 
 on:
   push:
-    branches: [ "main" ]  # 触发分支
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # 或 windows-latest / macos-latest
+    runs-on: windows-latest  # 用 Windows Runner 才能打包成 EXE
 
     steps:
       - name: Checkout repository
@@ -19,19 +19,33 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Install Nuitka
-        run: pip install nuitka
+      # 缓存 pip，加速依赖安装
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\pip\Cache
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
-      - name: Build with Nuitka
+      - name: Install dependencies
         run: |
-      - name: Build with Nuitka
-        run: |
-          python -m nuitka --standalone --onefile --follow-imports \
-            --output-dir=build main.py
+          pip install --upgrade pip
+          if exist requirements.txt (pip install -r requirements.txt)
+          pip install nuitka
 
+      - name: Build with Nuitka (Onefile EXE)
+        run: |
+          python -m nuitka ^
+            --standalone ^
+            --onefile ^
+            --mingw64 ^
+            --lto=no ^
+            --output-dir=build ^
+            main.py
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: nuitka-build
+          name: nuitka-exe
           path: build/
