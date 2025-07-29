@@ -62,7 +62,6 @@ jobs:
             --show-memory ^
             --assume-yes-for-downloads ^
             --plugin-enable=pyqt6 ^
-            --plugin-enable=requests ^
             --lto=no ^
             --output-dir=build ^
             main.py
@@ -85,7 +84,6 @@ jobs:
             --show-memory ^
             --assume-yes-for-downloads ^
             --plugin-enable=pyqt6 ^
-            --plugin-enable=requests ^
             --lto=no ^
             --output-dir=build-standalone ^
             main.py
