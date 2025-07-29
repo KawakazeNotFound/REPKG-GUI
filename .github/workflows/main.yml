@@ -10,21 +10,19 @@ jobs:
   build:
     runs-on: windows-latest
     env:
-      # 允许 Nuitka 自动下载官方支持的 MinGW 编译器
       NUITKA_USE_WINLIBS: "yes"
+      NUITKA_AUTO_UPDATE: "1"
+      NUITKA_DOWNLOAD_GCC: "1"
 
     steps:
-      # 1️⃣ 拉取仓库代码
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ 配置 Python 3.10
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      # 3️⃣ 缓存 pip，加快依赖安装
       - name: Cache pip
         uses: actions/cache@v4
         with:
@@ -33,14 +31,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      # 4️⃣ 缓存 Nuitka MinGW，避免每次重新下载编译器
       - name: Cache Nuitka MinGW
         uses: actions/cache@v4
         with:
           path: C:\Users\runneradmin\AppData\Local\Nuitka\Nuitka\Cache\downloads\gcc
           key: ${{ runner.os }}-nuitka-gcc
 
-      # 5️⃣ 安装依赖和 Nuitka
       - name: Install dependencies
         shell: pwsh
         run: |
@@ -48,7 +44,6 @@ jobs:
           if (Test-Path requirements.txt) { pip install -r requirements.txt }
           pip install nuitka
 
-      # 6️⃣ 使用 Nuitka 打包单文件 EXE
       - name: Build with Nuitka (Onefile EXE)
         shell: cmd
         run: |
@@ -56,11 +51,11 @@ jobs:
             --standalone ^
             --onefile ^
             --mingw64 ^
+            --assume-yes-for-downloads ^
             --lto=no ^
             --output-dir=build ^
             main.py
 
-      # 7️⃣ 上传构建产物
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
