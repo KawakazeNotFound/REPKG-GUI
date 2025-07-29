@@ -15,11 +15,6 @@ jobs:
       NUITKA_DOWNLOAD_GCC: "1"
 
     steps:
-      - name: Verify Artifacts
-        shell: pwsh
-        run: |
-          ls build/
-          ls
           
       # 1️⃣ 拉取代码
       - name: Checkout repository
@@ -66,7 +61,7 @@ jobs:
             --mingw64 ^
             --show-progress ^
             --show-memory ^
-            --windows-icon-from-ico=app.ico ^
+            --windows-icon-from-ico=assets/app.ico ^
             --assume-yes-for-downloads ^
             --plugin-enable=pyqt6 ^
             --lto=yes ^
@@ -89,7 +84,7 @@ jobs:
             --mingw64 ^
             --show-progress ^
             --show-memory ^
-            --windows-icon-from-ico=app.ico ^
+            --windows-icon-from-ico=assets/app.ico ^
             --assume-yes-for-downloads ^
             --plugin-enable=pyqt6 ^
             --lto=yes ^
