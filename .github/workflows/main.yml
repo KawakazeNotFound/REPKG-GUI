@@ -1,0 +1,96 @@
+name: Build with Nuitka
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      NUITKA_USE_WINLIBS: "yes"
+      NUITKA_AUTO_UPDATE: "1"
+      NUITKA_DOWNLOAD_GCC: "1"
+
+    steps:
+      # 1️⃣ 拉取代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ 配置 Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      # 3️⃣ 缓存 pip
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\pip\Cache
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # 4️⃣ 缓存 Nuitka MinGW
+      - name: Cache Nuitka MinGW
+        uses: actions/cache@v4
+        with:
+          path: C:\Users\runneradmin\AppData\Local\Nuitka\Nuitka\Cache\downloads\gcc
+          key: ${{ runner.os }}-nuitka-gcc
+
+      # 5️⃣ 安装依赖
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          pip install --upgrade pip
+          if (Test-Path requirements.txt) { pip install -r requirements.txt }
+          pip install nuitka
+          pip install PyQt6 PyQt6-Qt6 PyQt6-sip
+
+      # 6️⃣ 构建单文件可执行（Portable.exe）
+      - name: Build Portable EXE
+        shell: cmd
+        run: |
+          python -m nuitka ^
+            --standalone ^
+            --onefile ^
+            --mingw64 ^
+            --show-progress ^
+            --show-memory ^
+            --assume-yes-for-downloads ^
+            --plugin-enable=pyqt6 ^
+            --lto=no ^
+            --output-dir=build ^
+            main.py
+          rename build\main.exe Portable.exe
+
+      # 7️⃣ 构建独立运行版并打包为 打包版.zip
+      - name: Build Standalone Zip
+        shell: cmd
+        run: |
+          python -m nuitka ^
+            --standalone ^
+            --mingw64 ^
+            --show-progress ^
+            --show-memory ^
+            --assume-yes-for-downloads ^
+            --plugin-enable=pyqt6 ^
+            --lto=no ^
+            --output-dir=build-standalone ^
+            main.py
+          powershell Compress-Archive -Path build-standalone\main.dist\* -DestinationPath "打包版.zip"
+
+      # 8️⃣ 发布到 Release
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Automated Build ${{ github.run_number }}
+          files: |
+            Portable.exe
+            打包版.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
