@@ -52,8 +52,10 @@ jobs:
             --standalone ^
             --onefile ^
             --mingw64 ^
+            --show-progress ^
+            --show-memory ^
             --assume-yes-for-downloads ^
-            --enable-plugin=qt-plugins ^
+            --plugin-enable=qt-plugins ^
             --lto=no ^
             --output-dir=build ^
             main.py
