@@ -32,7 +32,7 @@ jobs:
              main.py  # Python 主文件
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: nuitka-build
           path: build/
