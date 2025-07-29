@@ -15,6 +15,12 @@ jobs:
       NUITKA_DOWNLOAD_GCC: "1"
 
     steps:
+      - name: Verify Artifacts
+        shell: pwsh
+        run: |
+          ls build/
+          ls
+          
       # 1️⃣ 拉取代码
       - name: Checkout repository
         uses: actions/checkout@v4
