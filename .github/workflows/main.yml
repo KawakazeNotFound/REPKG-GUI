@@ -65,7 +65,13 @@ jobs:
             --lto=no ^
             --output-dir=build ^
             main.py
-          rename build\main.exe Portable.exe
+          move build\main.exe build\Portable.exe
+          
+      - name: Verify Artifacts
+        shell: pwsh
+        run: |
+          ls build/
+          ls
 
       # 7️⃣ 构建独立运行版并打包为 打包版.zip
       - name: Build Standalone Zip
@@ -88,9 +94,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: Automated Build ${{ github.run_number }}
+          name: 自动构建的版本 ${{ github.run_number }}
           files: |
-            Portable.exe
+            build/Portable.exe
             打包版.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
