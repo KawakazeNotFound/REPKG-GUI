@@ -24,12 +24,11 @@ jobs:
 
       - name: Build with Nuitka
         run: |
-          python -m nuitka \
-            --standalone \  
-            --onefile \   
-            --follow-imports \  
-            --output-dir=build \  
-             main.py  
+      - name: Build with Nuitka
+        run: |
+          python -m nuitka --standalone --onefile --follow-imports \
+            --output-dir=build main.py
+
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
