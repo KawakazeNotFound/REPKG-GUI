@@ -76,6 +76,51 @@ class RePKG_GUI(QWidget):
         self.previewImages = []
         self.thumbnail_widgets = []
         
+
+        # 检查RePKG.exe是否存在
+        self.repkg_path = self.findRePKGExe()
+        if not self.repkg_path:
+            from PyQt6.QtWidgets import QMessageBox, QPushButton
+            msg = QMessageBox()
+            msg.setWindowTitle('缺少RePKG.exe')
+            msg.setText('未找到RePKG.exe，请确保RePKG.exe位于程序目录下。\n是否继续运行？（仅能提取未加密的图片和视频）')
+            
+            # 添加GitHub按钮
+            github_btn = QPushButton("GitHub")
+            github_btn.clicked.connect(self.openGithub)
+            
+            # 添加按钮到对话框
+            msg.addButton(github_btn, QMessageBox.ButtonRole.ActionRole)
+            msg.addButton(QMessageBox.StandardButton.Yes)
+            msg.addButton(QMessageBox.StandardButton.No)
+            
+            reply = msg.exec()
+            if reply == QMessageBox.StandardButton.No:
+                sys.exit()
+        else:
+            # 检查版本
+            local_version = self.checkRePKGVersion()
+            latest_version = self.getLatestRePKGVersion()
+            
+            if local_version and latest_version:
+                comparison = self.compareVersions(local_version, latest_version)
+                if comparison == -1:
+                    # 版本较旧，提示更新
+                    from PyQt6.QtWidgets import QMessageBox, QPushButton
+                    msg = QMessageBox()
+                    msg.setWindowTitle('RePKG版本过旧')
+                    msg.setText(f'当前RePKG版本为 {local_version}，最新版本为 {latest_version}\n建议更新到最新版本以获得更好的体验。')
+                    
+                    # 添加GitHub按钮
+                    github_btn = QPushButton("GitHub")
+                    github_btn.clicked.connect(self.openGithub)
+                    
+                    # 添加按钮到对话框
+                    msg.addButton(github_btn, QMessageBox.ButtonRole.ActionRole)
+                    msg.addButton(QMessageBox.StandardButton.Yes)
+                    msg.exec()
+
+
         # 添加分页相关属性
         self.current_page = 0
         self.items_per_page = 30
@@ -120,7 +165,7 @@ class RePKG_GUI(QWidget):
         # 7. 添加选项卡
         self.pkgTab = self.createPKGTab()
         self.manualTab = self.createManualTab()
-        self.settingsTab = QWidget()
+        self.settingsTab = self.createSettingsTab()
         self.tabWidget.addTab(self.pkgTab, "已安装")
         self.tabWidget.addTab(self.manualTab, "手动提取")
         self.tabWidget.addTab(self.settingsTab, "设置")
@@ -133,7 +178,7 @@ class RePKG_GUI(QWidget):
         # 9. 遍历目录加载预览
         self.traverseDirectory()
 
-    # ------------------------- Steam获取 -------------------------
+    # ------------------------- 环境检查 -------------------------
 
     def getSteamInstallPath(self):
         """通过注册表获取Steam安装路径"""
@@ -157,6 +202,23 @@ class RePKG_GUI(QWidget):
                 if os.path.exists(os.path.join(path, "steam.exe")):
                     return path
             return None
+
+    def findRePKGExe(self):
+        """查找RePKG.exe的位置"""
+        # 首先在程序所在目录查找
+        if getattr(sys, 'frozen', False):
+            # 如果是打包后的程序
+            exe_dir = sys._MEIPASS
+        else:
+            exe_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        repkg_path = os.path.join(exe_dir, 'RePKG.exe')
+        if os.path.exists(repkg_path):
+            return repkg_path
+        
+        # 如果没找到，返回None
+        return None
+
 
     # ------------------------- 配置管理 -------------------------
 
@@ -187,6 +249,129 @@ class RePKG_GUI(QWidget):
 
 
     # ------------------------- UI/事件逻辑 -------------------------
+
+    def createSettingsTab(self):
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        
+        # 添加检查更新按钮
+        update_check_layout = QHBoxLayout()
+        update_check_layout.addWidget(QLabel("RePKG版本检查"))
+        self.versionLabel = QLabel("未检查")
+        self.versionLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.versionLabel.setStyleSheet("color: gray;")
+        checkUpdateBtn = QPushButton("检查远端版本")
+        checkUpdateBtn.clicked.connect(self.checkUpdate)
+        update_check_layout.addWidget(self.versionLabel)
+        update_check_layout.addWidget(checkUpdateBtn)
+        layout.addLayout(update_check_layout)
+
+        # 添加GitHub按钮
+        github_layout = QHBoxLayout()
+        github_btn = QPushButton("访问GitHub")
+        github_btn.clicked.connect(self.openGithub)
+        github_layout.addWidget(github_btn)
+        layout.addLayout(github_layout)
+        
+        layout.addStretch()
+        return tab
+
+
+    def checkUpdate(self):
+        """检查更新并显示版本信息"""
+        self.versionLabel.setText("检查中...")
+        QApplication.processEvents()  # 确保界面更新
+        
+        try:
+            # 获取远端版本信息
+            latest_version = self.getLatestRePKGVersion()
+            if latest_version:
+                self.versionLabel.setText(f"远端版本: {latest_version}\n(检查更新功能维护中)")
+            else:
+                self.versionLabel.setText("获取远端版本失败\n(检查更新功能维护中)")
+        except Exception as e:
+            self.versionLabel.setText("检查更新失败\n(检查更新功能维护中)")
+            print(f"检查更新出错: {e}")
+
+
+    def checkRePKGVersion(self):
+        """检查RePKG版本"""
+        try:
+            # 获取本地RePKG版本
+            if not self.repkg_path:
+                return "未安装"
+                
+            result = subprocess.run([self.repkg_path, "--version"], 
+                                capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                local_version = result.stdout.strip()
+                return local_version
+        except Exception as e:
+            print(f"检查RePKG版本失败: {e}")
+        return "未安装"
+
+    def getLatestRePKGVersion(self):
+        """获取最新RePKG版本"""
+        try:
+            import requests
+            response = requests.get("https://api.github.com/repos/notscuffed/repkg/releases/latest", timeout=10)
+            if response.status_code == 200:
+                return response.json()["tag_name"]
+        except Exception as e:
+            print(f"获取最新RePKG版本失败: {e}")
+        return None
+    
+    def compareVersions(self, local_version, latest_version):
+        """比较版本号"""
+        try:
+            # 如果任一版本号为空，返回-1表示需要更新
+            if not local_version or not latest_version:
+                return -1
+                
+            # 移除 'v' 前缀（如果存在）
+            local = local_version.lstrip('v')
+            latest = latest_version.lstrip('v')
+            
+            # 分割版本号和附加信息
+            local_main = local.split('+')[0].split('-')[0]
+            latest_main = latest.split('+')[0].split('-')[0]
+            
+            # 分割版本号
+            local_parts = local_main.split('.')
+            latest_parts = latest_main.split('.')
+            
+            # 比较每个部分
+            for i in range(max(len(local_parts), len(latest_parts))):
+                local_part = local_parts[i] if i < len(local_parts) else '0'
+                latest_part = latest_parts[i] if i < len(latest_parts) else '0'
+                
+                # 尝试转换为整数进行比较
+                try:
+                    local_num = int(local_part)
+                    latest_num = int(latest_part)
+                except ValueError:
+                    # 如果转换失败，按字符串比较
+                    if local_part < latest_part:
+                        return -1
+                    elif local_part > latest_part:
+                        return 1
+                    continue
+                    
+                if local_num < latest_num:
+                    return -1
+                elif local_num > latest_num:
+                    return 1
+                
+            return 0
+        except Exception as e:
+            print(f"版本比较失败: {e}")
+            return -1  # 发生错误时默认返回需要更新
+
+    def openGithub(self):
+        """打开GitHub页面"""
+        import webbrowser
+        webbrowser.open('https://github.com/notscuffed/repkg/releases')
+
     def traverseDirectory(self):
         print("开始查找PKG文件")
         directory = self.workshopDirectory
@@ -392,15 +577,19 @@ class RePKG_GUI(QWidget):
 
     def getExtractCommand(self, file_path, save_directory):
         if file_path.endswith('.pkg'):
-            return ["RePKG.exe", "extract", file_path, "-o", save_directory]
+            if not self.repkg_path:
+                from PyQt6.QtWidgets import QMessageBox
+                QMessageBox.warning(self, '错误', '未找到RePKG.exe，无法进行PKG提取！')
+                return None
+            return [self.repkg_path, "extract", file_path, "-o", save_directory]
         elif file_path.endswith('.mp4') or file_path.endswith(('.jpg', '.jpeg', '.png')):
-            # 使用Python内置的文件复制，返回None表示不使用外部命令
             return None
         return None
 
     def extractAction(self, imagePath):
         if not imagePath:
             return
+            
         parent_path = os.path.dirname(imagePath)
         pj = os.path.join(parent_path, "project.json")
         title = "Untitled"
@@ -410,9 +599,6 @@ class RePKG_GUI(QWidget):
                 title = re.sub(r'[<>:"/\\|?*]', '', title) or "Untitled"
             except:
                 pass
-
-        save_dir = os.path.join(self.savePathEdit.text(), title)
-        os.makedirs(save_dir, exist_ok=True)
 
         # 按优先级查找文件：scene.pkg -> mp4 -> 图片文件
         scene_pkg = os.path.join(parent_path, "scene.pkg")
@@ -437,6 +623,9 @@ class RePKG_GUI(QWidget):
         
         # 根据文件类型处理
         if target.endswith('.mp4'):
+            # 只有在确定要进行复制时才创建文件夹
+            save_dir = os.path.join(self.savePathEdit.text(), title)
+            os.makedirs(save_dir, exist_ok=True)
             import shutil
             try:
                 filename = os.path.basename(target)
@@ -450,6 +639,9 @@ class RePKG_GUI(QWidget):
                 if btn:
                     btn.setText("复制失败")
         elif target.endswith(('.png', '.jpg', '.jpeg')):
+            # 只有在确定要进行复制时才创建文件夹
+            save_dir = os.path.join(self.savePathEdit.text(), title)
+            os.makedirs(save_dir, exist_ok=True)
             import shutil
             try:
                 filename = os.path.basename(target)
@@ -464,7 +656,18 @@ class RePKG_GUI(QWidget):
                     btn.setText("复制失败")
         else:
             # 使用RePKG提取PKG文件
-            self.worker = ExtractWorker(["RePKG.exe", "extract", target, "-o", save_dir])
+            if not self.repkg_path:
+                from PyQt6.QtWidgets import QMessageBox
+                QMessageBox.warning(self, '错误', '未找到RePKG.exe，无法进行PKG提取！')
+                if btn:
+                    btn.setText("RePKG.exe未找到")
+                return
+            
+            # 只有在确认可以进行提取时才创建文件夹
+            save_dir = os.path.join(self.savePathEdit.text(), title)
+            os.makedirs(save_dir, exist_ok=True)
+            
+            self.worker = ExtractWorker([self.repkg_path, "extract", target, "-o", save_dir])
             self.worker.finished.connect(lambda: self.on_extract_finished(btn))
             self.worker.error.connect(lambda msg: self.on_extract_error(btn, msg))
             self.worker.start()
@@ -697,6 +900,7 @@ class RePKG_GUI(QWidget):
         layout.addWidget(batchCard)
         layout.addStretch()
         return tab
+    
 
 # ------------------------- 主程序 -------------------------
 def main():

@@ -1,6 +1,7 @@
 # 忽略 Python 虚拟环境目录
 .venv/
 .venv/*
+dist/*
 # 忽略 config.json 文件
 config.json
 
@@ -10,3 +11,39 @@ __pycache__/
 *.log
 *.env
 .DS_Store
+.vscode/settings.json
+dist/concrt140.dll
+dist/libcrypto-1_1.dll
+dist/main.exe
+dist/msvcp140_1.dll
+dist/msvcp140_2.dll
+dist/msvcp140.dll
+dist/python3.dll
+dist/python310.dll
+dist/qt6core.dll
+dist/qt6gui.dll
+dist/qt6network.dll
+dist/qt6pdf.dll
+dist/qt6svg.dll
+dist/qt6widgets.dll
+dist/RePKG.exe
+dist/vcruntime140_1.dll
+dist/vcruntime140.dll
+dist/PyQt6/Qt6/plugins/iconengines/qsvgicon.dll
+dist/PyQt6/Qt6/plugins/imageformats/qgif.dll
+dist/PyQt6/Qt6/plugins/imageformats/qicns.dll
+dist/PyQt6/Qt6/plugins/imageformats/qico.dll
+dist/PyQt6/Qt6/plugins/imageformats/qjpeg.dll
+dist/PyQt6/Qt6/plugins/imageformats/qpdf.dll
+dist/PyQt6/Qt6/plugins/imageformats/qsvg.dll
+dist/PyQt6/Qt6/plugins/imageformats/qtga.dll
+dist/PyQt6/Qt6/plugins/imageformats/qtiff.dll
+dist/PyQt6/Qt6/plugins/imageformats/qwbmp.dll
+dist/PyQt6/Qt6/plugins/imageformats/qwebp.dll
+dist/PyQt6/Qt6/plugins/platforms/qminimal.dll
+dist/PyQt6/Qt6/plugins/platforms/qoffscreen.dll
+dist/PyQt6/Qt6/plugins/platforms/qwindows.dll
+dist/PyQt6/Qt6/plugins/styles/qmodernwindowsstyle.dll
+dist/PyQt6/Qt6/plugins/tls/qcertonlybackend.dll
+dist/PyQt6/Qt6/plugins/tls/qopensslbackend.dll
+dist/PyQt6/Qt6/plugins/tls/qschannelbackend.dll
