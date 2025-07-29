@@ -5,7 +5,7 @@ RePKG GUI 重构版
 - 更多功能还在学说是
 """
 
-import sys, os, json, glob, subprocess, re
+import sys, os, json, glob, subprocess, re, shutil
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QTabWidget, QVBoxLayout, QLabel, QPushButton, QLineEdit,
     QHBoxLayout, QGridLayout, QScrollArea, QFrame, QFileDialog, QProgressBar
@@ -268,7 +268,7 @@ class RePKG_GUI(QWidget):
 
         # 添加GitHub按钮
         github_layout = QHBoxLayout()
-        github_btn = QPushButton("访问GitHub")
+        github_btn = QPushButton("访问GitHub下载地址")
         github_btn.clicked.connect(self.openGithub)
         github_layout.addWidget(github_btn)
         layout.addLayout(github_layout)
@@ -575,6 +575,118 @@ class RePKG_GUI(QWidget):
 
     # ------------------------- 提取逻辑 -------------------------
 
+    def organizeExtractedFiles(self):
+        # 获取保存路径
+        save_dir = self.savePathEdit.text()
+        if not save_dir:
+            return
+            
+        # 遍历保存目录下的所有文件夹
+        for item in os.listdir(save_dir):
+            item_path = os.path.join(save_dir, item)
+            if not os.path.isdir(item_path):
+                continue
+                
+            materials_dir = os.path.join(item_path, "materials")
+            if not os.path.exists(materials_dir):
+                continue
+                
+            # 获取materials文件夹中的所有图片文件
+            for root, _, files in os.walk(materials_dir):
+                for file in files:
+                    src_path = os.path.join(root, file)
+                    if file.lower().endswith(('.png', '.jpg', '.jpeg')):
+                        dst_path = os.path.join(item_path, file)
+                        base_name, ext = os.path.splitext(dst_path)
+                        counter = 1
+                        while os.path.exists(dst_path):
+                            dst_path = f"{base_name}_{counter}{ext}"
+                            counter += 1
+                        try:
+                            shutil.copy2(src_path, dst_path)
+                        except Exception as e:
+                            print(f"复制文件失败: {e}")
+            
+            # 删除materials文件夹和非图片文件
+            try:
+                shutil.rmtree(materials_dir)
+                for file in os.listdir(item_path):
+                    file_path = os.path.join(item_path, file)
+                    if not file.lower().endswith(('.png', '.jpg', '.jpeg')):
+                        if os.path.isfile(file_path):
+                            os.remove(file_path)
+                        elif os.path.isdir(file_path):
+                            shutil.rmtree(file_path)
+            except Exception as e:
+                print(f"清理文件失败: {e}")
+
+
+    def extractAndOrganizeFiles(self):
+        if not self.currentImagePath:
+            print("未选择壁纸")
+            return
+
+        def after_extract():
+            print("开始整理文件")
+            self.organizeExtractedFiles()
+            if btn:
+                btn.setText("提取并整理完成")
+                btn.setEnabled(True)
+
+        btn = self.sender()
+        if btn:
+            btn.setEnabled(False)
+            btn.setText("提取中...")
+
+        # 用于提取的代码块
+        parent_path = os.path.dirname(self.currentImagePath)
+        pj = os.path.join(parent_path, "project.json")
+        title = "Untitled"
+        if os.path.exists(pj):
+            try:
+                title = json.load(open(pj, 'r', encoding='utf-8')).get("title", "Untitled")
+                title = re.sub(r'[<>:"/\\|?*]', '', title) or "Untitled"
+            except:
+                pass
+
+        scene_pkg = os.path.join(parent_path, "scene.pkg")
+        mp4_files = glob.glob(os.path.join(parent_path, "*.mp4"))
+        image_files = glob.glob(os.path.join(parent_path, "*.jpg")) + \
+                    glob.glob(os.path.join(parent_path, "*.jpeg")) + \
+                    glob.glob(os.path.join(parent_path, "*.png"))
+
+        target = None
+        if os.path.exists(scene_pkg):
+            target = scene_pkg
+        elif mp4_files:
+            target = mp4_files[0]
+        elif image_files:
+            target = image_files[0]
+
+        if not target:
+            print("未找到可提取文件")
+            return
+
+        save_dir = os.path.join(self.savePathEdit.text(), title)
+        os.makedirs(save_dir, exist_ok=True)
+
+        if target.endswith('.mp4') or target.endswith(('.jpg', '.jpeg', '.png')):
+            try:
+                shutil.copy2(target, os.path.join(save_dir, os.path.basename(target)))
+                after_extract()
+            except Exception as e:
+                print(f"复制失败: {e}")
+                if btn:
+                    btn.setText("复制失败")
+                    btn.setEnabled(True)
+        else:
+            # 使用 RePKG 异步提取，然后连接到整理逻辑
+            self.worker = ExtractWorker([self.repkg_path, "extract", target, "-o", save_dir])
+            self.worker.finished.connect(after_extract)
+            self.worker.error.connect(lambda msg: self.on_extract_error(btn, msg)) 
+            self.worker.start()
+
+
     def getExtractCommand(self, file_path, save_directory):
         if file_path.endswith('.pkg'):
             if not self.repkg_path:
@@ -819,45 +931,39 @@ class RePKG_GUI(QWidget):
         rightPanel = QWidget()
         rightPanel.setFixedWidth(300)
         rightLayout = QVBoxLayout(rightPanel)
+        
+        # 添加预览窗口
         self.previewLabel = QLabel("[就绪]")
         self.previewLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.previewLabel.setFixedSize(280, 280)
         self.previewLabel.setStyleSheet("border: 2px solid #555;")
+        rightLayout.addWidget(self.previewLabel)
 
+        # 添加信息标签
         self.titleLabel = QLabel("[选取一个壁纸来查看]")
         self.titleLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        rightLayout.addWidget(self.titleLabel)
 
         self.pathLabel = QLabel("[选取一个壁纸来查看]")
         self.pathLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        rightLayout.addWidget(self.pathLabel)
+
+        # 添加按钮组
+        extractAndOrganizeBtn = QPushButton("提取并整理")
+        extractAndOrganizeBtn.clicked.connect(self.extractAndOrganizeFiles)
+        rightLayout.addWidget(extractAndOrganizeBtn)
 
         extractAllBtn = QPushButton("全部提取")
         extractAllBtn.clicked.connect(lambda: self.extractAction(self.currentImagePath))
+        rightLayout.addWidget(extractAllBtn)
 
         openDirBtn = QPushButton("打开目录")
         openDirBtn.clicked.connect(self.openCurrentDirectory)
-
-        # 分页控件
-        pageControlLayout = QHBoxLayout()
-        self.prevBtn = QPushButton("上一页")
-        self.prevBtn.clicked.connect(self.goToPreviousPage)
-        self.nextBtn = QPushButton("下一页") 
-        self.nextBtn.clicked.connect(self.goToNextPage)
-        self.pageLabel = QLabel("第 1 页，共 1 页")
-        self.pageLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        pageControlLayout.addWidget(self.prevBtn)
-        pageControlLayout.addWidget(self.pageLabel)
-        pageControlLayout.addWidget(self.nextBtn)
-
-        # 将分页控件添加到主布局中（在缩略图区域下方）
-        layout.addLayout(pageControlLayout)
-
-        rightLayout.addWidget(self.previewLabel)
-        rightLayout.addWidget(self.titleLabel)
-        rightLayout.addWidget(self.pathLabel)
-        rightLayout.addWidget(extractAllBtn)
         rightLayout.addWidget(openDirBtn)
+
         rightLayout.addStretch(1)
+
+
 
         mainContent.addWidget(thumbArea, 7)
         mainContent.addWidget(rightPanel, 2)
