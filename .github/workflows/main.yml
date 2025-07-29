@@ -1,0 +1,38 @@
+name: Build with Nuitka
+
+on:
+  push:
+    branches: [ "main" ]  # 触发分支
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # 或 windows-latest / macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install Nuitka
+        run: pip install nuitka
+
+      - name: Build with Nuitka
+        run: |
+          python -m nuitka \
+            --standalone \  # 生成独立可执行文件
+            --onefile \    # 打包成单个文件（可选）
+            --follow-imports \  # 包含所有依赖
+            --output-dir=build \  # 输出目录
+             main.py  # Python 主文件
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: nuitka-build
+          path: build/
