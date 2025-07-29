@@ -43,6 +43,7 @@ jobs:
           pip install --upgrade pip
           if (Test-Path requirements.txt) { pip install -r requirements.txt }
           pip install nuitka
+          pip install PyQt6 PyQt6-Qt6 PyQt6-sip
 
       - name: Build with Nuitka (Onefile EXE)
         shell: cmd
@@ -52,6 +53,7 @@ jobs:
             --onefile ^
             --mingw64 ^
             --assume-yes-for-downloads ^
+            --enable-plugin=qt-plugins ^
             --lto=no ^
             --output-dir=build ^
             main.py
