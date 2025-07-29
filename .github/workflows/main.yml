@@ -25,11 +25,11 @@ jobs:
       - name: Build with Nuitka
         run: |
           python -m nuitka \
-            --standalone \  # 生成独立可执行文件
-            --onefile \    # 打包成单个文件（可选）
-            --follow-imports \  # 包含所有依赖
-            --output-dir=build \  # 输出目录
-             main.py  # Python 主文件
+            --standalone \  
+            --onefile \   
+            --follow-imports \  
+            --output-dir=build \  
+             main.py  
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
