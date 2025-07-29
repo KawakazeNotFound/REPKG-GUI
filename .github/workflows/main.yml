@@ -62,7 +62,7 @@ jobs:
             --show-memory ^
             --assume-yes-for-downloads ^
             --plugin-enable=pyqt6 ^
-            --lto=no ^
+            --lto=yes ^
             --output-dir=build ^
             main.py
           move build\main.exe build\Portable.exe
@@ -84,7 +84,7 @@ jobs:
             --show-memory ^
             --assume-yes-for-downloads ^
             --plugin-enable=pyqt6 ^
-            --lto=no ^
+            --lto=yes ^
             --output-dir=build-standalone ^
             main.py
           powershell Compress-Archive -Path build-standalone\main.dist\* -DestinationPath "打包版.zip"
