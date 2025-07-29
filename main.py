@@ -75,7 +75,8 @@ class RePKG_GUI(QWidget):
         self.currentImagePath = None
         self.previewImages = []
         self.thumbnail_widgets = []
-        
+        # 在添加现有选项卡的位置后添加
+
 
         # 检查RePKG.exe是否存在
         self.repkg_path = self.findRePKGExe()
@@ -168,7 +169,9 @@ class RePKG_GUI(QWidget):
         self.settingsTab = self.createSettingsTab()
         self.tabWidget.addTab(self.pkgTab, "已安装")
         self.tabWidget.addTab(self.manualTab, "手动提取")
-        self.tabWidget.addTab(self.settingsTab, "设置")
+        self.tabWidget.addTab(self.settingsTab, "设置")   
+        self.aboutTab = self.createAboutTab()
+        self.tabWidget.addTab(self.aboutTab, "关于")
 
         # 8. 设置保存路径
         defaultSavePath = config.get("save_path", os.path.dirname(os.path.abspath(__file__)))
@@ -230,7 +233,14 @@ class RePKG_GUI(QWidget):
         if os.path.exists(path):
             try:
                 with open(path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
+                    config = json.load(f)
+                    # 设置自定义选项卡的值
+                    if "custom_title" in config:
+                        self.customTitleEdit.setText(config["custom_title"])
+                        self.setWindowTitle(config["custom_title"])  # 应用保存的标题
+                    if "custom_path" in config:
+                        self.customPathEdit.setText(config["custom_path"])
+                    return config
             except Exception as e:
                 print(f"加载配置文件失败: {e}")
         return {"save_path": os.path.dirname(os.path.abspath(__file__))}
@@ -239,7 +249,9 @@ class RePKG_GUI(QWidget):
         path = self.getConfigPath()
         config_data = {
             "save_path": self.savePathEdit.text(),
-            "workshop_dir": self.workshopDirectory
+            "workshop_dir": self.workshopDirectory,
+            "custom_title": self.customTitleEdit.text(),
+            "custom_path": self.customPathEdit.text()
         }
         try:
             with open(path, 'w', encoding='utf-8') as f:
@@ -250,9 +262,91 @@ class RePKG_GUI(QWidget):
 
     # ------------------------- UI/事件逻辑 -------------------------
 
+
+    def applyCustomTitle(self):
+        """应用自定义标题"""
+        new_title = self.customTitleEdit.text().strip()
+        if new_title:
+            self.setWindowTitle(new_title)
+            # 保存到配置
+            self.saveConfig()
+        else:
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, '警告', '标题不能为空！')
+
+
+    def chooseBackgroundColor(self):
+        from PyQt6.QtWidgets import QColorDialog
+        color = QColorDialog.getColor()
+        if color.isValid():
+            self.setStyleSheet(f"background-color: {color.name()};")
+
+    def browseCustomPath(self):
+        directory = QFileDialog.getExistingDirectory(self, "选择自定义保存路径")
+        if directory:
+            self.customPathEdit.setText(directory)
+
+
+    def createAboutTab(self):
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        
+        # 添加关于信息
+        about_group = QFrame()
+        about_group.setFrameStyle(QFrame.Shape.Box)
+        about_layout = QVBoxLayout(about_group)
+        
+        # 添加版本信息
+        version_label = QLabel("版本: 0.0.1")
+        version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        about_layout.addWidget(version_label)
+        
+        # 添加作者信息
+        author_label = QLabel("作者: KawakazeNotFound/Ryosume")
+        author_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        about_layout.addWidget(author_label)
+        
+        # 添加GitHub按钮
+        github_btn = QPushButton("访问GitHub项目页面")
+        github_btn.clicked.connect(self.openMyGithub)
+        about_layout.addWidget(github_btn)
+        
+        layout.addWidget(about_group)
+        layout.addStretch()
+        return tab
+
     def createSettingsTab(self):
         tab = QWidget()
         layout = QVBoxLayout(tab)
+        
+        # 添加自定义设置组
+        settingsGroup = QFrame()
+        settingsGroup.setFrameStyle(QFrame.Shape.Box)
+        settingsLayout = QVBoxLayout(settingsGroup)
+        
+        # 添加自定义标题
+        titleLayout = QHBoxLayout()
+        titleLayout.addWidget(QLabel("自定义标题:"))
+        self.customTitleEdit = QLineEdit()
+        self.customTitleEdit.setPlaceholderText("输入自定义标题")
+        titleLayout.addWidget(self.customTitleEdit)
+        applyTitleBtn = QPushButton("应用标题")
+        applyTitleBtn.clicked.connect(self.applyCustomTitle)
+        titleLayout.addWidget(applyTitleBtn)
+        settingsLayout.addLayout(titleLayout)
+        
+        # 添加自定义背景颜色
+        colorLayout = QHBoxLayout()
+        colorLayout.addWidget(QLabel("背景颜色:"))
+        self.colorButton = QPushButton("选择颜色")
+        self.colorButton.clicked.connect(self.chooseBackgroundColor)
+        colorLayout.addWidget(self.colorButton)
+        settingsLayout.addLayout(colorLayout)
+        
+        # 添加版本检查组
+        versionGroup = QFrame()
+        versionGroup.setFrameStyle(QFrame.Shape.Box)
+        versionLayout = QVBoxLayout(versionGroup)
         
         # 添加检查更新按钮
         update_check_layout = QHBoxLayout()
@@ -264,18 +358,19 @@ class RePKG_GUI(QWidget):
         checkUpdateBtn.clicked.connect(self.checkUpdate)
         update_check_layout.addWidget(self.versionLabel)
         update_check_layout.addWidget(checkUpdateBtn)
-        layout.addLayout(update_check_layout)
-
+        versionLayout.addLayout(update_check_layout)
+        
         # 添加GitHub按钮
         github_layout = QHBoxLayout()
         github_btn = QPushButton("访问GitHub下载地址")
         github_btn.clicked.connect(self.openGithub)
         github_layout.addWidget(github_btn)
-        layout.addLayout(github_layout)
+        versionLayout.addLayout(github_layout)
         
+        settingsLayout.addWidget(versionGroup)
+        layout.addWidget(settingsGroup)
         layout.addStretch()
         return tab
-
 
     def checkUpdate(self):
         """检查更新并显示版本信息"""
@@ -371,6 +466,11 @@ class RePKG_GUI(QWidget):
         """打开GitHub页面"""
         import webbrowser
         webbrowser.open('https://github.com/notscuffed/repkg/releases')
+
+    def openMyGithub(self):
+        """打开我的GitHub页面"""
+        import webbrowser
+        webbrowser.open('https://github.com/KawakazeNotFound/REPKG-GUI')
 
     def traverseDirectory(self):
         print("开始查找PKG文件")

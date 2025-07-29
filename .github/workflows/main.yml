@@ -60,6 +60,7 @@ jobs:
             --mingw64 ^
             --show-progress ^
             --show-memory ^
+            --windows-icon-from-ico=app.ico ^
             --assume-yes-for-downloads ^
             --plugin-enable=pyqt6 ^
             --lto=yes ^
@@ -82,6 +83,7 @@ jobs:
             --mingw64 ^
             --show-progress ^
             --show-memory ^
+            --windows-icon-from-ico=app.ico ^
             --assume-yes-for-downloads ^
             --plugin-enable=pyqt6 ^
             --lto=yes ^
