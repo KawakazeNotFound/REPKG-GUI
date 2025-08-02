@@ -81,11 +81,8 @@ class TabCreator:
         self.parent.prevBtn.clicked.connect(self.parent.go_to_previous_page)
         self.parent.nextBtn = QPushButton("下一页")
         self.parent.nextBtn.clicked.connect(self.parent.go_to_next_page)
-        self.parent.pageLabel = QLabel("第 1 页，共 1 页")
-        self.parent.pageLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
         pageLayout.addWidget(self.parent.prevBtn)
-        pageLayout.addWidget(self.parent.pageLabel)
         pageLayout.addWidget(self.parent.nextBtn)
         rightLayout.addLayout(pageLayout)
 
@@ -242,6 +239,9 @@ class TabCreator:
         github_btn.clicked.connect(self.parent.version_checker.open_my_github)
         about_layout.addWidget(github_btn)
         
+        layout.addWidget(about_group)
+        layout.addStretch()
+        return tab
         layout.addWidget(about_group)
         layout.addStretch()
         return tab

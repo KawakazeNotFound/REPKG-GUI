@@ -120,10 +120,16 @@ class RePKGGUI(QWidget):
         self.progressBar.setFormat("加载中... %p% (%v/%m)")
         self.mainLayout.addWidget(self.progressBar, 1, 0, 1, 3)
         
-        # 6. 设置创意工坊目录
+        # 6. 添加左下角页码信息标签
+        self.pageLabel = QLabel("第 1 页，共 1 页")
+        self.pageLabel.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.pageLabel.setStyleSheet("color: gray; font-size: 12px; padding: 5px;")
+        self.mainLayout.addWidget(self.pageLabel, 2, 0, 1, 1)
+        
+        # 7. 设置创意工坊目录
         self.workshopDirectory = workshop_dir
         
-        # 7. 添加选项卡
+        # 8. 添加选项卡
         self.pkgTab = self.tab_creator.create_pkg_tab()
         self.manualTab = self.tab_creator.create_manual_tab()
         self.settingsTab = self.tab_creator.create_settings_tab()
@@ -134,7 +140,7 @@ class RePKGGUI(QWidget):
         self.tabWidget.addTab(self.settingsTab, "设置")
         self.tabWidget.addTab(self.aboutTab, "关于")
         
-        # 8. 应用配置中的自定义设置
+        # 9. 应用配置中的自定义设置
         if "custom_title" in config:
             self.customTitleEdit.setText(config["custom_title"])
             self.setWindowTitle(config["custom_title"])  # 应用保存的标题
@@ -142,12 +148,12 @@ class RePKGGUI(QWidget):
             # 这里应该有一个customPathEdit，但在原代码中似乎没有实际使用
             pass
         
-        # 9. 设置保存路径
+        # 10. 设置保存路径
         defaultSavePath = config.get("save_path", os.path.dirname(os.path.abspath(__file__)))
         self.savePathEdit.setText(defaultSavePath)
         self.savePathEdit.setPlaceholderText(f"当前: {defaultSavePath}")
         
-        # 10. 遍历目录加载预览
+        # 11. 遍历目录加载预览
         self.traverse_directory()
     
     # ------------------------- 配置和设置 -------------------------
