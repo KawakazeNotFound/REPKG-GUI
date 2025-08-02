@@ -401,7 +401,7 @@ class RePKGGUI(QWidget):
         urls = e.mimeData().urls()
         if urls:
             f = urls[0].toLocalFile()
-            if f.endswith(('.pkg', '.mp4')):
+            if f.lower().endswith(('.pkg', '.mp4')):
                 self.manualPathEdit.setText(f)
 
     def handle_batch_drop(self, e):
@@ -444,7 +444,7 @@ class RePKGGUI(QWidget):
         save_dir = os.path.join(self.savePathEdit.text(), title)
         os.makedirs(save_dir, exist_ok=True)
 
-        if target.endswith('.mp4') or target.endswith(('.jpg', '.jpeg', '.png')):
+        if target.lower().endswith('.mp4') or target.lower().endswith(('.jpg', '.jpeg', '.png')):
             if self.file_ops.copy_file_to_directory(target, save_dir):
                 after_extract()
             else:
@@ -476,7 +476,7 @@ class RePKGGUI(QWidget):
         os.makedirs(save_dir, exist_ok=True)
         
         # 根据文件类型处理
-        if target.endswith('.mp4') or target.endswith(('.png', '.jpg', '.jpeg')):
+        if target.lower().endswith('.mp4') or target.lower().endswith(('.png', '.jpg', '.jpeg')):
             if self.file_ops.copy_file_to_directory(target, save_dir):
                 print("文件复制完成")
                 if btn:
@@ -507,14 +507,14 @@ class RePKGGUI(QWidget):
             return
         
         save_dir = self.savePathEdit.text()
-        if file_path.endswith('.pkg'):
+        if file_path.lower().endswith('.pkg'):
             save_dir = os.path.join(save_dir, os.path.splitext(os.path.basename(file_path))[0])
         os.makedirs(save_dir, exist_ok=True)
 
         btn = self.sender()
         
         # 如果是mp4文件，直接复制
-        if file_path.endswith('.mp4'):
+        if file_path.lower().endswith('.mp4'):
             if self.file_ops.copy_file_to_directory(file_path, save_dir):
                 print("MP4文件复制完成")
                 if btn:
@@ -549,8 +549,8 @@ class RePKGGUI(QWidget):
             target_file = None
             if "scene.pkg" in files:
                 target_file = os.path.join(root, "scene.pkg")
-            elif any(f.endswith('.mp4') for f in files):
-                mp4_files = [f for f in files if f.endswith('.mp4')]
+            elif any(f.lower().endswith('.mp4') for f in files):
+                mp4_files = [f for f in files if f.lower().endswith('.mp4')]
                 target_file = os.path.join(root, mp4_files[0])
             
             if target_file:
