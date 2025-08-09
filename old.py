@@ -3,7 +3,7 @@ RePKG GUI 重构版
 - 配置/工具函数 -> 事件处理 -> 提取逻辑 -> UI 构建 -> 主程序
 - 缩略图预览、提取命令生成、配置管理
 - 更多功能还在学说是
-"""
+"""7
 
 import sys, os, json, glob, subprocess, re, shutil
 from PyQt6.QtWidgets import (
