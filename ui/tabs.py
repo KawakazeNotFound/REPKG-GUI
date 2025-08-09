@@ -44,6 +44,15 @@ class TabCreator:
         workshopLayout.addWidget(workshopBrowseButton)
         layout.addLayout(workshopLayout)
 
+        # 搜索框
+        searchLayout = QHBoxLayout()
+        searchLayout.addWidget(QLabel("搜索"))
+        self.parent.searchEdit = QLineEdit()
+        self.parent.searchEdit.setPlaceholderText("输入壁纸标题搜索")
+        self.parent.searchEdit.textChanged.connect(self.parent.search_wallpapers)
+        searchLayout.addWidget(self.parent.searchEdit)
+        layout.addLayout(searchLayout)
+
         # 主内容区域
         mainContent = QHBoxLayout()
 

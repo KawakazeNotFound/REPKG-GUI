@@ -5,6 +5,7 @@
 
 import os
 import subprocess
+import json
 from PyQt6.QtCore import QThread, pyqtSignal, Qt
 from PyQt6.QtGui import QPixmap, QMovie
 
@@ -41,7 +42,7 @@ class ImageLoadWorker(QThread):
         for i, imagePath in enumerate(self.image_paths):
             fileExt = os.path.splitext(imagePath)[1].lower()
             display_object = None
-            
+
             if fileExt in ['.jpg', '.jpeg']:
                 pixmap = QPixmap(imagePath)
                 display_object = pixmap.scaled(180, 180, Qt.AspectRatioMode.KeepAspectRatio,
@@ -53,8 +54,32 @@ class ImageLoadWorker(QThread):
                     display_object = movie.currentPixmap().scaled(
                         180, 180, Qt.AspectRatioMode.KeepAspectRatio,
                         Qt.TransformationMode.SmoothTransformation)
-            
+
             self.imageLoaded.emit(i, imagePath, display_object)
             self.progressChanged.emit(i + 1, len(self.image_paths))
-        
+
         self.finished.emit()
+
+
+class SearchIndexWorker(QThread):
+    """异步创建搜索索引的工作线程"""
+    indexBuilt = pyqtSignal(list)
+
+    def __init__(self, image_paths):
+        super().__init__()
+        self.image_paths = image_paths
+
+    def run(self):
+        index = []
+        for image_path in self.image_paths:
+            title = ""
+            pj = os.path.join(os.path.dirname(image_path), "project.json")
+            if os.path.exists(pj):
+                try:
+                    with open(pj, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        title = data.get("title", "")
+                except Exception:
+                    pass
+            index.append({"title": title.lower(), "path": image_path})
+        self.indexBuilt.emit(index)

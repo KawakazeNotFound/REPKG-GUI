@@ -11,13 +11,13 @@ from PyQt6.QtWidgets import (
     QApplication, QWidget, QTabWidget, QVBoxLayout, QLabel, QPushButton,
     QHBoxLayout, QGridLayout, QFileDialog, QProgressBar, QMessageBox, QColorDialog
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QPixmap, QMovie
 
 from utils.config_manager import ConfigManager
 from utils.file_operations import FileOperations
 from utils.version_checker import VersionChecker
-from utils.workers import ExtractWorker, ImageLoadWorker
+from utils.workers import ExtractWorker, ImageLoadWorker, SearchIndexWorker
 from ui.tabs import TabCreator
 
 
@@ -29,7 +29,9 @@ class RePKGGUI(QWidget):
         self.setWindowTitle("Yet Another RePKG-GUI")
         self.currentImagePath = None
         self.previewImages = []
+        self.originalPreviewImages = []
         self.thumbnail_widgets = []
+        self.search_index = []
         
         # 初始化工具类
         self.config_manager = ConfigManager()
@@ -221,6 +223,10 @@ class RePKGGUI(QWidget):
         if not self.previewImages:
             print("警告：未找到任何预览图片")
 
+        # 备份原始列表并创建搜索索引
+        self.originalPreviewImages = list(self.previewImages)
+        QTimer.singleShot(0, self.start_search_index_worker)
+
         self.load_preview_images()
     
     def load_preview_images(self):
@@ -357,6 +363,31 @@ class RePKGGUI(QWidget):
     def on_loading_finished(self):
         """加载完成回调"""
         self.progressBar.setVisible(False)
+
+    # ------------------------- 搜索索引 -------------------------
+
+    def start_search_index_worker(self):
+        """启动异步搜索索引构建"""
+        if hasattr(self, 'searchWorker') and self.searchWorker.isRunning():
+            self.searchWorker.terminate()
+        self.searchWorker = SearchIndexWorker(self.originalPreviewImages)
+        self.searchWorker.indexBuilt.connect(self.on_search_index_built)
+        self.searchWorker.start()
+
+    def on_search_index_built(self, index):
+        """搜索索引构建完成回调"""
+        self.search_index = index
+
+    def search_wallpapers(self, text):
+        """根据标题搜索壁纸"""
+        query = text.strip().lower()
+        if query:
+            matched = [item["path"] for item in self.search_index if query in item["title"]]
+            self.previewImages = matched
+        else:
+            self.previewImages = list(self.originalPreviewImages)
+        self.current_page = 0
+        self.load_preview_images()
     
     # ------------------------- 文件选择 -------------------------
     
